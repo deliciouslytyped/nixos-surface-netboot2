@@ -1,0 +1,12 @@
+--- nixos-containers.nix	1970-01-01 01:00:01.000000000 +0100
++++ nixos-containers.nix	2021-04-14 17:25:21.557596350 +0200
+@@ -272,7 +276,8 @@
+   };
+ 
+   system = config.nixpkgs.localSystem.system;
+-  kernelVersion = config.boot.kernelPackages.kernel.version;
++#  kernelVersion = config.boot.kernelPackages.kernel.version;
++  kernelVersion = builtins.trace "WARNING:HACK" "5.4";
+ 
+   bindMountOpts = { name, ... }: {
+ 

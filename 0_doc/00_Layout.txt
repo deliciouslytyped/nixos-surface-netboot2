@@ -1,0 +1,64 @@
+0_doc
+```
+Hello.
+Yes this is doc. :V
+
+configuration.nix
+`````````````````
+configuration.nix is located in the root of the repository. The intention is to make functional
+the tools that expect configuration.nix to be in the location determined by the default `NIX_PATH`,
+namely /etc/nixos/configuration.nix.
+
+Specifically, `nixos-rebuild` and `nixos-option` are intended to work.
+
+
+configurations
+``````````````
+This directory contains system configurations, such as for containers or top level systems.
+Such system configurations must be places in this directory, if you want the configuration to be
+able to handle `inner` systems, and to enable the nix tooling in them. (??clarify)
+
+- impure.nix, impure, impure/system
+
+The repository is (intended to be) designed such that all sources of mutable state ("impurity") in
+the configuration are purified into function arguments/module attrs in this file. An example of
+this is reading the `impure/system` file, to determine which system configuration to use, and then
+importing the appropriate system configuration module.
+
+Beyond this, all files as a matter of policy (are intended to:) must use full and explicit pinning.
+
+containers
+``````````
+This directory contains nix files to be used by `extra-container` for semi-imperative containers.
+(`extra-container` uses the declarative containers mechanism, but manages the containers separate
+from your system's /etc/nixos/configuration.nix)/
+
+Note the containers that are intended to be run at the top level have shebang lines and are runnable.
+See `lib/shebang.nix` for argument processing or pass literally `-h` as the first argument to get
+the (admittedly limited) usage instructions.
+
+lib
+```
+Misc. nix files.
+
+- container-outerset.nix, contains settings for enabling nix tooling in containers and nested
+containers (note that nested containers in configurations like this, use the host systems nix daemon)
+
+-
+
+netboot
+```````
+Code for netboot services in the pxe_server container
+
+nix
+```
+This structure is required for niv to work. niv's pinning files live here.
+
+patches
+```````
+Containes patches; currently for extra-container (??some weird pinning thing I'm doing that may be
+unwarranted), and `modules/virtualisation/nixos-container` (minimal ipvlan support).
+
+secrets
+```````
+Exists but is not included in this repo.

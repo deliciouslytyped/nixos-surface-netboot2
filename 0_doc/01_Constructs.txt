@@ -1,0 +1,21 @@
+TODO
+
+- shebang
+- nested containers
+- pxe; dhcp/dnsmasq, ipvlan
+
+Installer
+- configuration "swapping"
+- justdoit/reserved partitions
+- kexec
+- TODO keyserver
+- TODO gen_network
+
+
+- patches
+
+
+
+- installer, remote_builder, nest
+
+- passwordless ssh

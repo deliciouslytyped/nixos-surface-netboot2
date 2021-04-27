@@ -1,0 +1,5 @@
+- This directory expects a file called "system" which contains the name of one of the directories in the "configurations" directory.
+This file must not end in a newline, or have other extraneous characters, unless those are also part of the directory name.
+This is used to demultiplex configurations.
+
+- There may be an "imports" subdirectory. All of the files in this directory will be imported as modules.

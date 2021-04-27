@@ -1,0 +1,27 @@
+From 635e77f77da07cc8a85dbfb52c248a1622312424 Mon Sep 17 00:00:00 2001
+From: deliciouslytyped <deliciouslytyped>
+Date: Sun, 31 Jan 2021 14:22:53 +0100
+Subject: [PATCH 2/3] Fix syntax errors. I forgot to test.
+
+---
+ eval-config.nix | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/eval-config.nix b/eval-config.nix
+index cf65f3a..a1361c2 100644
+--- a/eval-config.nix
++++ b/eval-config.nix
+@@ -244,8 +244,8 @@ let
+ 
+   #TODO what if there are multiple containers? There's no "meaningful" reason they shouldn't be able to each have different pins. The funky part is you have to eval them all in some context. For now, if you want to do this, you should have one container per file.
+   firstAttr = a: 
+-    let name = builtins.head (builtins.attrNames a)
+-    in builtins.getAttr name a
++    let name = builtins.head (builtins.attrNames a);
++    in builtins.getAttr name a;
+   extra-overrides = (firstAttr stage1.config.containers).extra.overrideArgs;
+ in
+   # Only do work on a second eval-config if we need to #TODO benchmark
+-- 
+2.25.4
+

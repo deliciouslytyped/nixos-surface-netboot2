@@ -1,0 +1,47 @@
+--- nixos-containers.nix	1970-01-01 01:00:01.000000000 +0100
++++ nixos-containers.nix	2021-04-14 17:25:21.557596350 +0200
+@@ -118,6 +118,10 @@
+         extraFlags+=" --network-macvlan=$iface"
+       done
+ 
++      for iface in $IPVLANS; do
++        extraFlags+=" --network-ipvlan=$iface"
++      done
++
+       # If the host is 64-bit and the container is 32-bit, add a
+       # --personality flag.
+       ${optionalString (config.nixpkgs.localSystem.system == "x86_64-linux") ''
+@@ -602,6 +607,17 @@
+               '';
+             };
+ 
++            ipvlans = mkOption {
++              type = types.listOf types.str;
++              default = [];
++              example = [ "eth1" "eth2" ];
++              description = ''
++                The list of host interfaces from which ipvlans will be
++                created. For each interface specified, a ipvlan interface
++                will be created and moved to the container.
++              '';
++            };
++
+             extraVeths = mkOption {
+               type = with types; attrsOf (submodule { options = networkOptions; });
+               default = {};
+@@ -831,6 +847,7 @@
+             ''}
+             INTERFACES="${toString cfg.interfaces}"
+             MACVLANS="${toString cfg.macvlans}"
++            IPVLANS="${toString cfg.ipvlans}"
+             ${optionalString cfg.autoStart ''
+               AUTO_START=1
+             ''}
+@@ -858,6 +875,7 @@
+     boot.kernelModules = [
+       "bridge"
+       "macvlan"
++      "ipvlan" #TODO i imagine this doesnt actually load any kernel modules in the case of extra-container
+       "tap"
+       "tun"
+     ];

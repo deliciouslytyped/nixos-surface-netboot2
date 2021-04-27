@@ -1,0 +1,102 @@
+From 8a2b930779c9a3347eaee88694a97000c8cedaf0 Mon Sep 17 00:00:00 2001
+From: deliciouslytyped <deliciouslytyped>
+Date: Wed, 14 Apr 2021 17:50:56 +0200
+Subject: [PATCH 3/3] save
+
+---
+ default.nix     |  0
+ eval-config.nix | 15 +++++++++------
+ scope.nix       | 34 ++++++++++++++++++++++++++++++++++
+ 3 files changed, 43 insertions(+), 6 deletions(-)
+ mode change 100644 => 100755 default.nix
+ mode change 100644 => 100755 eval-config.nix
+ create mode 100755 scope.nix
+
+diff --git a/default.nix b/default.nix
+old mode 100644
+new mode 100755
+diff --git a/eval-config.nix b/eval-config.nix
+old mode 100644
+new mode 100755
+index a1361c2..9373b98
+--- a/eval-config.nix
++++ b/eval-config.nix
+@@ -230,7 +230,7 @@ let
+   stage1 = let
+       extraArgs = { extra-container = { inherit args; path = builtins.toString ./.; }; }; #TODO should that be tostringed?
+     in
+-      builtins.trace "evaling stage1 with args: ${showSet args} \n and extraArgs: ${showSet extraArgs} ..." # https://fzakaria.com/2020/09/02/nix-coercion-trick.html
++      builtins.trace "evaling stage1 with nixPath: ${showSet __nixPath} \n with args: ${showSet args} \n and extraArgs: ${showSet extraArgs} ..." # https://fzakaria.com/2020/09/02/nix-coercion-trick.html
+         (import "${nixos}/lib/eval-config.nix" {
+           inherit baseModules extraArgs;
+           modules = [ extraModule systemConfig ];
+@@ -238,17 +238,20 @@ let
+ 
+   stage2 = let
+       newArgs = (args // { inStage2 = true; } // extra-overrides);
++      inherit (import ./scope.nix {}) nixPathImport;
+     in
+-      builtins.trace "evaling stage2 with args: ${showSet args} \n and overrides: ${showSet newArgs}..."
+-      (import ./eval-config.nix newArgs);
++      builtins.trace "evaling stage2 with nixPath: ${showSet __nixPath} \n args: ${showSet args} \n and overrides: ${showSet newArgs}..."
++      #Note cant fully unset nixpath yet because stage1 still needs it for eval and we dont know the new value till afterwards..
++        #TODO this is kinda redundant with the inside of stage1 calling {nixos} ? bvut we do still need this part - so really more crosstalk
++        (((nixPathImport { nix = "@corepkgs@";  nixpkgs = extra-overrides.nixosPath + "/../"; }) ./eval-config.nix) newArgs); #TODO assumes subdir of nixpkgs #TODO: theres a bug somewhere when <nix> is not sset and i cant figure it out #TODO hm i think i see, nixPathList only gets called if its a list, if its not a list it doesnt get called and isnt added or somethin actually no thats still not right because it should have broken sooner then...
+ 
+   #TODO what if there are multiple containers? There's no "meaningful" reason they shouldn't be able to each have different pins. The funky part is you have to eval them all in some context. For now, if you want to do this, you should have one container per file.
+   firstAttr = a: 
+     let name = builtins.head (builtins.attrNames a);
+     in builtins.getAttr name a;
+-  extra-overrides = (firstAttr stage1.config.containers).extra.overrideArgs;
++  extra-overrides = (firstAttr stage1.config.containers).extra.overrideArgs; #TODO multi
+ in
+   # Only do work on a second eval-config if we need to #TODO benchmark
+-  if (extra-overrides == null || inStage2)
+-    then stage1
+-    else stage2
++  if (extra-overrides == null || inStage2)
++    then stage1 # set eval context / do eval once eval context is proper
++    else stage2 # once eval envs are set, load evla context?
+diff --git a/scope.nix b/scope.nix
+new file mode 100755
+index 0000000..345e736
+--- /dev/null
++++ b/scope.nix
+@@ -0,0 +1,34 @@
++# via https://github.com/arcnmx/nixexprs/blob/master/lib/scope.nix
++
++{ ... }: let
++  # https://github.com/NixOS/nixpkgs/commit/62a6eeb1f3da0a5954ad2da54c454eb7fc1c6e5d
++  # convert { nixpkgs = ./path; } attrsets to [ { path = ./path; prefix = "nixpkgs" } ] format
++  nixPathList = nixPathAttrs: let
++    nixPath = {
++      # never really makes sense to omit <nix>?
++      nix = builtins.trace <nix> <nix>;
++    } // nixPathAttrs;
++  in builtins.map (prefix: {
++    inherit prefix;
++    path = toString nixPath.${prefix};
++  }) (builtins.attrNames nixPath);
++
++  # import a file with a new nixPath
++  nixPathImport = nixPath: nixPathScopedImport nixPath { };
++
++  # import a file with a new nixPath and scope
++  nixPathScopedImport = nixPath': newScope: let
++    nixPath = if builtins.isAttrs nixPath' then nixPathList nixPath' else nixPath';
++    import = builtins.scopedImport scope;
++    scopedImport = newScope: builtins.scopedImport (scope // newScope);
++    scope = newScope // {
++      inherit import scopedImport;
++      __nixPath = nixPath;
++      builtins = builtins // (newScope.builtins or { }) // {
++        inherit nixPath import scopedImport;
++      };
++    };
++  in import;
++in {
++  inherit nixPathImport nixPathScopedImport nixPathList;
++}
+-- 
+2.25.4
+
